@@ -110,7 +110,10 @@
     <FxCompile Include="TriangleConstShaders.hlsl">
       <Filter>리소스 파일</Filter>
     </FxCompile>
-    <FxCompile Include="TriangleDiffusedShaders.hlsl">
+    <FxCompile Include="TriangleVertexShader.hlsl">
+      <Filter>리소스 파일</Filter>
+    </FxCompile>
+    <FxCompile Include="TrianglePixelShader.hlsl">
       <Filter>리소스 파일</Filter>
     </FxCompile>
   </ItemGroup>

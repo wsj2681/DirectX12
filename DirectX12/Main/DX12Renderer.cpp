@@ -4,6 +4,8 @@
 
 #pragma comment(lib, "d3dcompiler.lib")
 
+
+
 DX12Renderer::DX12Renderer(DX12Device* device)
     : device(device), rtvDescriptorSize(0), currentBackBufferIndex(0) 
 {
@@ -23,15 +25,19 @@ bool DX12Renderer::Initialize()
     }
 
     // 정점 데이터 초기화
-    std::vector<Vertex> vertices = 
+    std::vector<VertexPositionColor> vertices =
     {
         {{0.0f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},   // 상단 정점 (빨강)
         {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},  // 오른쪽 하단 정점 (초록)
         {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}  // 왼쪽 하단 정점 (파랑)
     };
+    vector<uint16_t> indices = { 0, 1, 2 };
 
-    triangleMesh = make_unique<Mesh>(device->GetDevice().Get(), vertices);
-
+    triangleMesh = make_unique<Mesh<VertexPositionColor>>(device->GetDevice().Get(), vertices, indices);
+    if (!triangleMesh->Initialize(L"TriangleVertexShader.hlsl", L"TrianglePixelShader.hlsl"))
+    {
+        return false;
+    }
     return true;
 }
 

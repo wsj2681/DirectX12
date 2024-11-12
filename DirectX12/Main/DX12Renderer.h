@@ -7,6 +7,12 @@
 
 using Microsoft::WRL::ComPtr;
 
+struct VertexPositionColor
+{
+    DirectX::XMFLOAT3 position;
+    DirectX::XMFLOAT3 color;
+};
+
 class DX12Renderer {
 public:
     DX12Renderer(DX12Device* device);
@@ -35,7 +41,7 @@ private:
 
     bool isFullscreen = false;
 
-    unique_ptr<Mesh> triangleMesh;
+    unique_ptr<Mesh<VertexPositionColor>> triangleMesh;
 
 };
 
