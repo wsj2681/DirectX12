@@ -1,4 +1,7 @@
 #include "DX12Renderer.h"
+#include "d3dcompiler.h"
+
+#pragma comment(lib, "d3dcompiler.lib")
 
 DX12Renderer::DX12Renderer(DX12Device* device)
     : device(device), rtvDescriptorSize(0), currentBackBufferIndex(0) 
@@ -13,16 +16,67 @@ DX12Renderer::~DX12Renderer()
 
 bool DX12Renderer::Initialize() 
 {
-    if (!CreateCommandObjects())
+    if (!CreateCommandObjects() || !CreateRenderTarget())
     {
         return false;
     }
-    if (!CreateRenderTarget())
+    if (!CompileShadersAndCreatePipelineState())
     {
+        return false;
+    }
+    return true;
+}
+
+bool DX12Renderer::CompileShadersAndCreatePipelineState()
+{
+    ComPtr<ID3DBlob> vertexShader;
+    ComPtr<ID3DBlob> pixelShader;
+    ComPtr<ID3DBlob> error;
+
+    // Compile Vertex Shader
+    HRESULT hr = D3DCompileFromFile(L"Shaders.hlsl", nullptr, nullptr, "VSMain", "vs_5_0",
+        D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &vertexShader, &error);
+    if (FAILED(hr))
+    {
+        if (error) OutputDebugStringA((char*)error->GetBufferPointer());
         return false;
     }
 
-    return true;
+    // Compile Pixel Shader
+    hr = D3DCompileFromFile(L"Shaders.hlsl", nullptr, nullptr, "PSMain", "ps_5_0",
+        D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &pixelShader, &error);
+    if (FAILED(hr))
+    {
+        if (error) OutputDebugStringA((char*)error->GetBufferPointer());
+        return false;
+    }
+
+    // Describe and create the root signature
+    D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc = {};
+    rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+
+    ComPtr<ID3DBlob> signature;
+    D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &signature, &error);
+    device->GetDevice()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(),
+        IID_PPV_ARGS(&rootSignature));
+
+    // Create the pipeline state, which includes compiling and loading shaders
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+    psoDesc.InputLayout = { nullptr, 0 }; // No input layout
+    psoDesc.pRootSignature = rootSignature.Get();
+    psoDesc.VS = { vertexShader->GetBufferPointer(), vertexShader->GetBufferSize() };
+    psoDesc.PS = { pixelShader->GetBufferPointer(), pixelShader->GetBufferSize() };
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState.DepthEnable = FALSE;
+    psoDesc.DepthStencilState.StencilEnable = FALSE;
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+    psoDesc.SampleDesc.Count = 1;
+
+    return SUCCEEDED(device->GetDevice()->CreateGraphicsPipelineState(&psoDesc, IID_PPV_ARGS(&pipelineState)));
 }
 
 bool DX12Renderer::CreateCommandObjects() 
@@ -69,7 +123,20 @@ void DX12Renderer::Render()
 {
     // 커맨드 할당자와 커맨드 리스트 초기화
     commandAllocator->Reset();
-    commandList->Reset(commandAllocator.Get(), nullptr);
+    //commandList->Reset(commandAllocator.Get(), nullptr);
+    commandList->Reset(commandAllocator.Get(), pipelineState.Get());
+
+    D3D12_VIEWPORT viewport = {};
+    viewport.Width = static_cast<float>(FRAMEBUFFER_WIDTH); // 프레임버퍼 너비
+    viewport.Height = static_cast<float>(FRAMEBUFFER_HEIGHT); // 프레임버퍼 높이
+    viewport.MaxDepth = 1.0f;
+
+    D3D12_RECT scissorRect = {};
+    scissorRect.right = FRAMEBUFFER_WIDTH;
+    scissorRect.bottom = FRAMEBUFFER_HEIGHT;
+
+    commandList->RSSetViewports(1, &viewport);
+    commandList->RSSetScissorRects(1, &scissorRect);
 
     // 렌더 타겟 설정 및 클리어
     currentBackBufferIndex = device->GetSwapChain()->GetCurrentBackBufferIndex();
@@ -86,6 +153,13 @@ void DX12Renderer::Render()
     // 화면 클리어
     const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
     commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+
+    
+    commandList->SetGraphicsRootSignature(rootSignature.Get());
+    commandList->SetPipelineState(pipelineState.Get());
+    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    commandList->DrawInstanced(3, 1, 0, 0);
 
     // 렌더 타겟을 다시 Present 상태로 전환
     barrier = CD3DX12_RESOURCE_BARRIER::Transition(

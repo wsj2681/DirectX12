@@ -18,12 +18,17 @@ public:
 private:
     bool CreateCommandObjects();
     bool CreateRenderTarget();
+    bool CompileShadersAndCreatePipelineState();
 
     DX12Device* device;                       // DX12 디바이스 참조
     ComPtr<ID3D12CommandAllocator> commandAllocator;
     ComPtr<ID3D12GraphicsCommandList> commandList;
     ComPtr<ID3D12Resource> renderTargets[2];
     ComPtr<ID3D12DescriptorHeap> rtvHeap;
+    
+    ComPtr<ID3D12RootSignature> rootSignature;
+    ComPtr<ID3D12PipelineState> pipelineState;
+
     UINT rtvDescriptorSize;
     UINT currentBackBufferIndex;
 
