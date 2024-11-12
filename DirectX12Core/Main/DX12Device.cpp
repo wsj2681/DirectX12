@@ -24,16 +24,10 @@ bool DX12Device::CreateDevice()
 {
     // DXGI 팩토리 생성
     ComPtr<IDXGIFactory4> dxgiFactory;
-    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)))) 
-    {
-        return false;
-    }
+    HR(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)));
 
     // 디바이스 생성
-    if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)))) 
-    {
-        return false;
-    }
+    HR(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device)));
 
     return true;
 }
@@ -45,10 +39,7 @@ bool DX12Device::CreateCommandQueue()
     queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
     queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 
-    if (FAILED(device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&this->commandQueue)))) 
-    {
-        return false;
-    }
+    HR(device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&this->commandQueue)));
 
     return true;
 }
@@ -57,10 +48,7 @@ bool DX12Device::CreateSwapChain()
 {
     // DXGI 팩토리 생성
     ComPtr<IDXGIFactory4> dxgiFactory;
-    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)))) 
-    {
-        return false;
-    }
+    HR(CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory)))
 
     // 스왑 체인 설정
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -73,17 +61,10 @@ bool DX12Device::CreateSwapChain()
     swapChainDesc.SampleDesc.Count = 1;
 
     ComPtr<IDXGISwapChain1> tempswapChain;
-    if (FAILED(dxgiFactory->CreateSwapChainForHwnd(
-        commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &tempswapChain))) 
-    {
-        return false;
-    }
+    HR(dxgiFactory->CreateSwapChainForHwnd(commandQueue.Get(), hWnd, &swapChainDesc, nullptr, nullptr, &tempswapChain));
 
     // IDXGISwapChain4로 캐스팅
-    if (FAILED(tempswapChain.As(&this->swapChain))) 
-    {
-        return false;
-    }
+    HR(tempswapChain.As(&this->swapChain));
 
     currentBackBufferIndex = this->swapChain->GetCurrentBackBufferIndex();
     return true;
@@ -97,10 +78,7 @@ bool DX12Device::CreateRenderTargetViews()
     rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
     rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 
-    if (FAILED(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap)))) 
-    {
-        return false;
-    }
+    HR(device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap)));
 
     rtvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
@@ -108,10 +86,8 @@ bool DX12Device::CreateRenderTargetViews()
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
     for (UINT i = 0; i < 2; ++i) 
     {
-        if (FAILED(swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i])))) 
-        {
-            return false;
-        }
+        HR(swapChain->GetBuffer(i, IID_PPV_ARGS(&renderTargets[i])));
+
         device->CreateRenderTargetView(renderTargets[i].Get(), nullptr, rtvHandle);
         rtvHandle.Offset(1, rtvDescriptorSize);
     }
@@ -123,4 +99,19 @@ void DX12Device::Present()
 {
     swapChain->Present(1, 0);
     currentBackBufferIndex = swapChain->GetCurrentBackBufferIndex();
+}
+
+ComPtr<IDXGISwapChain4>& DX12Device::GetSwapChain()
+{
+    return this->swapChain;
+}
+
+ComPtr<ID3D12Device>& DX12Device::GetDevice()
+{
+    return this->device;
+}
+
+ComPtr<ID3D12CommandQueue>& DX12Device::GetCommandQueue()
+{
+    return commandQueue;
 }

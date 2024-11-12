@@ -1,40 +1,32 @@
 #pragma once
 
+#include "DX12Device.h"
 #include <wrl.h>
 #include <d3d12.h>
-#include <dxgi1_6.h>
-#include <string>
-#include "d3dx12.h"
 
 using Microsoft::WRL::ComPtr;
 
-class DX12Device 
+class DX12Renderer 
 {
 public:
-    DX12Device(HWND hWnd);
-    ~DX12Device();
+    DX12Renderer(DX12Device* device);
+    ~DX12Renderer();
 
     bool Initialize();
-    void Present();
-
-    ComPtr<IDXGISwapChain4>& GetSwapChain();
-    ComPtr<ID3D12Device>& GetDevice();
-    ComPtr<ID3D12CommandQueue>& GetCommandQueue();
+    void Render();
 
 private:
-    bool CreateDevice();
-    bool CreateCommandQueue();
-    bool CreateSwapChain();
-    bool CreateRenderTargetViews();
+    bool CreateCommandObjects();
+    bool CreateRenderTarget();
 
-    HWND hWnd;
-    ComPtr<ID3D12Device> device;
-    ComPtr<ID3D12CommandQueue> commandQueue;
-    ComPtr<IDXGISwapChain4> swapChain;
-    ComPtr<ID3D12DescriptorHeap> rtvHeap;
-    ComPtr<ID3D12Resource> renderTargets[2];
-    UINT rtvDescriptorSize;
-    UINT currentBackBufferIndex;
+    DX12Device* device_;                       // DX12 디바이스 참조
+    ComPtr<ID3D12CommandAllocator> commandAllocator_;
+    ComPtr<ID3D12GraphicsCommandList> commandList_;
+
+    ComPtr<ID3D12Resource> renderTargets_[2];
+    ComPtr<ID3D12DescriptorHeap> rtvHeap_;
+    UINT rtvDescriptorSize_;
+    UINT currentBackBufferIndex_;
 };
 
 //HR
