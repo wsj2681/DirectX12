@@ -132,6 +132,7 @@
     <ClInclude Include="Core.h" />
     <ClInclude Include="d3dx12.h" />
     <ClInclude Include="DX12Device.h" />
+    <ClInclude Include="DX12Renderer.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="Resource.h" />
@@ -140,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="DX12Device.cpp" />
+    <ClCompile Include="DX12Renderer.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>

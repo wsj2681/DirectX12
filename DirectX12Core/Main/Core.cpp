@@ -24,6 +24,12 @@ bool Core::Initialize(int nCmdShow)
         return false;
     }
 
+    dx12Renderer = make_unique<DX12Renderer>(dx12Device.get());
+    if (!dx12Renderer->Initialize())
+    {
+        MessageBox(hWnd, L"DirectX 12 Renderer 초기화에 실패했습니다.", L"오류", MB_OK);
+        return false;
+    }
     return true;
 }
 
@@ -43,7 +49,7 @@ int Core::Run()
         }
         else
         {
-            dx12Device->Present();
+            dx12Renderer->Render();
         }
     }
     return static_cast<int>(msg.wParam);

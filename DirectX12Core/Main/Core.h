@@ -1,6 +1,7 @@
 #pragma once
 #include "framework.h"
 #include "DX12Device.h"
+#include "DX12Renderer.h"
 
 class Core {
 public:
@@ -23,4 +24,5 @@ private:
     WCHAR szWindowClass[MAX_LOADSTRING];
 
     unique_ptr<DX12Device> dx12Device;
+    unique_ptr<DX12Renderer> dx12Renderer;
 };
