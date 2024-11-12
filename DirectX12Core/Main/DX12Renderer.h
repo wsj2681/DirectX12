@@ -1,8 +1,11 @@
 #pragma once
 
 #include "DX12Device.h"
+#include "Mesh.h"
+#include "Camera.h"
 #include <wrl.h>
 #include <d3d12.h>
+#include <d3dcompiler.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -18,15 +21,33 @@ public:
 private:
     bool CreateCommandObjects();
     bool CreateRenderTarget();
+    bool CreatePipelineState();
+    bool CreateConstantBuffer();
+
+    struct MVPMatrix
+    {
+        XMMATRIX world;
+        XMMATRIX view;
+        XMMATRIX projection;
+    };
 
     DX12Device* device;                       // DX12 디바이스 참조
     ComPtr<ID3D12CommandAllocator> commandAllocator;
     ComPtr<ID3D12GraphicsCommandList> commandList;
+    ComPtr<ID3D12PipelineState> pipelineState_;
+    ComPtr<ID3D12RootSignature> rootSignature_;
 
     ComPtr<ID3D12Resource> renderTargets[2];
     ComPtr<ID3D12DescriptorHeap> rtvHeap;
     UINT rtvDescriptorSize;
     UINT currentBackBufferIndex;
+
+    unique_ptr<Mesh> mesh;
+    unique_ptr<Camera> camera;
+
+    XMMATRIX worldMatrix;
+    ComPtr<ID3D12Resource> mvpBuffer;
+
 };
 
 //HR
