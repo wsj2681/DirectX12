@@ -1,6 +1,7 @@
 #pragma once
 
 #include "DX12Device.h"
+#include "Mesh.h"
 #include <wrl.h>
 #include <d3d12.h>
 
@@ -33,6 +34,9 @@ private:
     UINT currentBackBufferIndex;
 
     bool isFullscreen = false;
+
+    unique_ptr<Mesh> triangleMesh;
+
 };
 
 //HR

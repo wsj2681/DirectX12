@@ -1,3 +1,4 @@
+#include "framework.h"
 #include "DX12Renderer.h"
 #include "d3dcompiler.h"
 
@@ -20,10 +21,17 @@ bool DX12Renderer::Initialize()
     {
         return false;
     }
-    if (!CompileShadersAndCreatePipelineState())
+
+    // 정점 데이터 초기화
+    std::vector<Vertex> vertices = 
     {
-        return false;
-    }
+        {{0.0f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}},   // 상단 정점 (빨강)
+        {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},  // 오른쪽 하단 정점 (초록)
+        {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}  // 왼쪽 하단 정점 (파랑)
+    };
+
+    triangleMesh = make_unique<Mesh>(device->GetDevice().Get(), vertices);
+
     return true;
 }
 
@@ -123,8 +131,8 @@ void DX12Renderer::Render()
 {
     // 커맨드 할당자와 커맨드 리스트 초기화
     commandAllocator->Reset();
-    //commandList->Reset(commandAllocator.Get(), nullptr);
-    commandList->Reset(commandAllocator.Get(), pipelineState.Get());
+    commandList->Reset(commandAllocator.Get(), nullptr);
+    //commandList->Reset(commandAllocator.Get(), pipelineState.Get());
 
     D3D12_VIEWPORT viewport = {};
     viewport.Width = static_cast<float>(FRAMEBUFFER_WIDTH); // 프레임버퍼 너비
@@ -154,12 +162,10 @@ void DX12Renderer::Render()
     const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
     commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
-    
-    commandList->SetGraphicsRootSignature(rootSignature.Get());
-    commandList->SetPipelineState(pipelineState.Get());
-    commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
-    commandList->DrawInstanced(3, 1, 0, 0);
+    if (triangleMesh)
+    {
+        triangleMesh->Render(commandList.Get());
+    }
 
     // 렌더 타겟을 다시 Present 상태로 전환
     barrier = CD3DX12_RESOURCE_BARRIER::Transition(
